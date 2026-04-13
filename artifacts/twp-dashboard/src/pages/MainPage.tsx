@@ -12,6 +12,8 @@ import {
   useGetLabelList,
   useAssignSubscriberToLabel,
   useBulkAssignSubscribersToLabel,
+  useGetTemplateList,
+  useSendTemplateToLabel,
 } from "@workspace/api-client-react";
 import * as XLSX from "xlsx";
 import { useCredentials } from "@/contexts/CredentialsContext";
@@ -28,7 +30,7 @@ import {
   MousePointerClick, Trophy, Minus, Zap, Flame,
   RefreshCw, Download, ArrowLeft, ChevronLeft, ChevronRight,
   BarChart2, Award, Building2, Tag, Plus, CheckCircle2, XCircle,
-  Upload, FileSpreadsheet, X, AlertCircle,
+  Upload, FileSpreadsheet, X, AlertCircle, Send, Eye,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -550,6 +552,277 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
   );
 }
 
+/* ═══════════════ MESSAGE BROADCAST CARD ═══════════════ */
+function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; phoneNumberId: string }) {
+  const [selectedLabelName, setSelectedLabelName] = useState("");
+  const [selectedTemplate, setSelectedTemplate] = useState<{ id: string; name: string; message: string } | null>(null);
+  const [customMessage, setCustomMessage] = useState("");
+  const [useCustom, setUseCustom] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [sendResult, setSendResult] = useState<{ total: number; succeeded: number; failed: number; errors: { phone: string; reason: string }[] } | null>(null);
+  const [showErrors, setShowErrors] = useState(false);
+
+  const { data: labelListData, isLoading: loadingLabels } = useGetLabelList(
+    { apiToken, phoneNumberId },
+    { query: { enabled: true, retry: 0 } }
+  );
+  const labelList = labelListData?.labels ?? [];
+
+  const { data: labelStatsData } = useGetLabelStats(
+    { apiToken, phoneNumberId },
+    { query: { enabled: true, retry: 0 } }
+  );
+  const labelStats = labelStatsData?.labels ?? [];
+  const selectedLabelStat = labelStats.find((l) => l.labelName === selectedLabelName);
+
+  const { mutate: fetchTemplates, data: templatesData, isPending: loadingTemplates } = useGetTemplateList();
+  const templates = templatesData?.templates ?? [];
+
+  const { mutate: doSend, isPending: sending } = useSendTemplateToLabel({
+    mutation: {
+      onSuccess: (data) => {
+        setSendResult(data);
+        setConfirmed(false);
+      },
+    },
+  });
+
+  useEffect(() => {
+    fetchTemplates({ data: { apiToken, phoneNumberId } });
+  }, [apiToken, phoneNumberId]);
+
+  const messageToSend = useCustom ? customMessage.trim() : (selectedTemplate?.message ?? "");
+  const canSend = selectedLabelName && messageToSend && !sending;
+
+  function handleSend() {
+    if (!canSend) return;
+    setSendResult(null);
+    setShowErrors(false);
+    doSend({ data: { apiToken, phoneNumberId, labelName: selectedLabelName, message: messageToSend } });
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#F0FDF4" }}>
+          <Send size={18} style={{ color: "#16A34A" }} />
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-900 text-base">Message Distribution</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Broadcast a message to all subscribers in a label</p>
+        </div>
+        <button
+          onClick={() => fetchTemplates({ data: { apiToken, phoneNumberId } })}
+          disabled={loadingTemplates}
+          className="ml-auto text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 disabled:opacity-50"
+        >
+          <RefreshCw size={12} className={loadingTemplates ? "animate-spin" : ""} />
+          Refresh
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        {/* Label select */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">Target Label</label>
+          {loadingLabels ? (
+            <div className="h-9 bg-gray-100 rounded-lg animate-pulse" />
+          ) : (
+            <select
+              value={selectedLabelName}
+              onChange={(e) => { setSelectedLabelName(e.target.value); setSendResult(null); setConfirmed(false); }}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+            >
+              <option value="">— Select a label —</option>
+              {labelList.map((l) => {
+                const stat = labelStats.find((s) => s.labelName === l.name);
+                const count = stat?.count ?? "?";
+                return (
+                  <option key={l.id} value={l.name}>
+                    {l.name} ({count} subscribers)
+                  </option>
+                );
+              })}
+            </select>
+          )}
+          {selectedLabelStat && (
+            <p className="text-xs text-gray-400 mt-1">
+              {selectedLabelStat.count} active · {selectedLabelStat.dormantCount} dormant
+            </p>
+          )}
+        </div>
+
+        {/* Template select */}
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">Message Template</label>
+          {loadingTemplates ? (
+            <div className="h-9 bg-gray-100 rounded-lg animate-pulse" />
+          ) : (
+            <select
+              value={selectedTemplate?.id ?? ""}
+              onChange={(e) => {
+                if (e.target.value === "__custom__") {
+                  setSelectedTemplate(null);
+                  setUseCustom(true);
+                  setSendResult(null);
+                  setConfirmed(false);
+                } else {
+                  const t = templates.find((t) => t.id === e.target.value) ?? null;
+                  setSelectedTemplate(t);
+                  setUseCustom(false);
+                  setSendResult(null);
+                  setConfirmed(false);
+                }
+              }}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
+            >
+              <option value="">— Select a template —</option>
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+              <option value="__custom__">✏️ Custom message…</option>
+            </select>
+          )}
+          {templates.length === 0 && !loadingTemplates && (
+            <p className="text-xs text-amber-500 mt-1">No templates found — you can still type a custom message.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Custom message toggle */}
+      {(selectedTemplate?.id === "__custom__" || useCustom) ? null : (
+        <button
+          className="text-xs text-blue-500 hover:text-blue-700 mb-2 underline"
+          onClick={() => { setUseCustom(true); setSelectedTemplate(null); }}
+        >
+          Or type a custom message instead
+        </button>
+      )}
+
+      {/* Message preview / custom input */}
+      {(selectedTemplate && !useCustom) && (
+        <div className="mb-4">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-gray-600 mb-1.5">
+            <Eye size={12} /> Message Preview
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto">
+            {selectedTemplate.message || <span className="text-gray-400 italic">No preview available</span>}
+          </div>
+        </div>
+      )}
+
+      {useCustom && (
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">Custom Message</label>
+          <textarea
+            value={customMessage}
+            onChange={(e) => setCustomMessage(e.target.value)}
+            rows={4}
+            placeholder="Type your message here…"
+            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 resize-none"
+          />
+          <button className="text-xs text-gray-400 hover:text-gray-600 mt-1 underline" onClick={() => { setUseCustom(false); setCustomMessage(""); }}>
+            Cancel custom message
+          </button>
+        </div>
+      )}
+
+      {/* Confirm & Send */}
+      {!sendResult && (
+        <div className="flex items-center gap-3 flex-wrap">
+          {!confirmed ? (
+            <button
+              disabled={!canSend}
+              onClick={() => setConfirmed(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"
+              style={{ background: canSend ? "#16A34A" : "#9CA3AF" }}
+            >
+              <Send size={14} />
+              {selectedLabelStat ? `Send to ${selectedLabelStat.count} subscribers` : "Send to label"}
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                Send <strong>{useCustom ? "custom message" : (selectedTemplate?.name ?? "message")}</strong> to <strong>{selectedLabelStat?.count ?? "all"}</strong> subscribers in <strong>{selectedLabelName}</strong>?
+              </span>
+              <button
+                onClick={handleSend}
+                disabled={sending}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-white flex items-center gap-1.5 disabled:opacity-50"
+                style={{ background: "#16A34A" }}
+              >
+                {sending ? <RefreshCw size={12} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                {sending ? "Sending…" : "Confirm"}
+              </button>
+              <button
+                onClick={() => setConfirmed(false)}
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Results */}
+      {sendResult && (
+        <div className="mt-4 rounded-xl border p-4" style={{ borderColor: sendResult.failed === 0 ? "#BBF7D0" : "#FED7AA", background: sendResult.failed === 0 ? "#F0FDF4" : "#FFF7ED" }}>
+          <div className="flex items-center gap-2 mb-2">
+            {sendResult.failed === 0 ? (
+              <CheckCircle2 size={16} style={{ color: "#16A34A" }} />
+            ) : (
+              <AlertCircle size={16} style={{ color: "#EA580C" }} />
+            )}
+            <span className="text-sm font-semibold" style={{ color: sendResult.failed === 0 ? "#15803D" : "#9A3412" }}>
+              Broadcast {sendResult.failed === 0 ? "complete" : "finished with errors"}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 text-center mb-3">
+            <div className="bg-white rounded-lg py-2">
+              <p className="text-lg font-bold text-gray-800">{sendResult.total}</p>
+              <p className="text-xs text-gray-500">Total</p>
+            </div>
+            <div className="bg-white rounded-lg py-2">
+              <p className="text-lg font-bold" style={{ color: "#16A34A" }}>{sendResult.succeeded}</p>
+              <p className="text-xs text-gray-500">Sent</p>
+            </div>
+            <div className="bg-white rounded-lg py-2">
+              <p className="text-lg font-bold" style={{ color: sendResult.failed > 0 ? "#EA580C" : "#9CA3AF" }}>{sendResult.failed}</p>
+              <p className="text-xs text-gray-500">Failed</p>
+            </div>
+          </div>
+          {sendResult.failed > 0 && (
+            <button
+              className="text-xs text-orange-600 underline hover:text-orange-800"
+              onClick={() => setShowErrors(!showErrors)}
+            >
+              {showErrors ? "Hide" : "Show"} {sendResult.failed} failed numbers
+            </button>
+          )}
+          {showErrors && sendResult.errors.length > 0 && (
+            <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+              {sendResult.errors.map((e, i) => (
+                <div key={i} className="text-xs text-gray-600 flex gap-2">
+                  <span className="font-mono text-orange-700">{e.phone}</span>
+                  <span className="text-gray-400">—</span>
+                  <span>{e.reason}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            className="mt-3 text-xs text-blue-600 hover:text-blue-800 underline"
+            onClick={() => { setSendResult(null); setConfirmed(false); setSelectedLabelName(""); setSelectedTemplate(null); setCustomMessage(""); setUseCustom(false); }}
+          >
+            Start a new broadcast
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ═══════════════ DASHBOARD CONTENT ═══════════════ */
 function DashboardContent() {
   const { credentials, clearCredentials } = useCredentials();
@@ -633,6 +906,7 @@ function DashboardContent() {
         subtitle="Label breakdown and reply volume" color={ORANGE}
         onDownload={() => labelsData && downloadCSV("label-distribution.csv", labelsData.labels)}>
         <LabelManagementCard apiToken={credentials!.apiToken} phoneNumberId={credentials!.phoneNumberId} />
+        <MessageBroadcastCard apiToken={credentials!.apiToken} phoneNumberId={credentials!.phoneNumberId} />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <ChartCard title="Reply Volume" subtitle="User vs TWP messages">
             <div className="h-[230px]">

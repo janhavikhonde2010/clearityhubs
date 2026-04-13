@@ -40,7 +40,12 @@ import type {
   GetSequenceStatsParams,
   GetSubscribers200,
   GetSubscribersParams,
+  GetTemplateListBody,
+  GetTemplateListResponse,
   HealthStatus,
+  SendTemplateToLabel400,
+  SendToLabelBody,
+  SendToLabelResponse,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -1056,6 +1061,179 @@ export const useBulkAssignSubscribersToLabel = <
   TContext
 > => {
   return useMutation(getBulkAssignSubscribersToLabelMutationOptions(options));
+};
+
+/**
+ * @summary List WhatsApp message templates
+ */
+export const getGetTemplateListUrl = () => {
+  return `/api/templates/list`;
+};
+
+export const getTemplateList = async (
+  getTemplateListBody: GetTemplateListBody,
+  options?: RequestInit,
+): Promise<GetTemplateListResponse> => {
+  return customFetch<GetTemplateListResponse>(getGetTemplateListUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(getTemplateListBody),
+  });
+};
+
+export const getGetTemplateListMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof getTemplateList>>,
+    TError,
+    { data: BodyType<GetTemplateListBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof getTemplateList>>,
+  TError,
+  { data: BodyType<GetTemplateListBody> },
+  TContext
+> => {
+  const mutationKey = ["getTemplateList"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof getTemplateList>>,
+    { data: BodyType<GetTemplateListBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return getTemplateList(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GetTemplateListMutationResult = NonNullable<
+  Awaited<ReturnType<typeof getTemplateList>>
+>;
+export type GetTemplateListMutationBody = BodyType<GetTemplateListBody>;
+export type GetTemplateListMutationError = ErrorType<unknown>;
+
+/**
+ * @summary List WhatsApp message templates
+ */
+export const useGetTemplateList = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof getTemplateList>>,
+    TError,
+    { data: BodyType<GetTemplateListBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof getTemplateList>>,
+  TError,
+  { data: BodyType<GetTemplateListBody> },
+  TContext
+> => {
+  return useMutation(getGetTemplateListMutationOptions(options));
+};
+
+/**
+ * @summary Send a message template to all subscribers of a label
+ */
+export const getSendTemplateToLabelUrl = () => {
+  return `/api/templates/send-to-label`;
+};
+
+export const sendTemplateToLabel = async (
+  sendToLabelBody: SendToLabelBody,
+  options?: RequestInit,
+): Promise<SendToLabelResponse> => {
+  return customFetch<SendToLabelResponse>(getSendTemplateToLabelUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(sendToLabelBody),
+  });
+};
+
+export const getSendTemplateToLabelMutationOptions = <
+  TError = ErrorType<SendTemplateToLabel400>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendTemplateToLabel>>,
+    TError,
+    { data: BodyType<SendToLabelBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendTemplateToLabel>>,
+  TError,
+  { data: BodyType<SendToLabelBody> },
+  TContext
+> => {
+  const mutationKey = ["sendTemplateToLabel"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendTemplateToLabel>>,
+    { data: BodyType<SendToLabelBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return sendTemplateToLabel(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendTemplateToLabelMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendTemplateToLabel>>
+>;
+export type SendTemplateToLabelMutationBody = BodyType<SendToLabelBody>;
+export type SendTemplateToLabelMutationError =
+  ErrorType<SendTemplateToLabel400>;
+
+/**
+ * @summary Send a message template to all subscribers of a label
+ */
+export const useSendTemplateToLabel = <
+  TError = ErrorType<SendTemplateToLabel400>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendTemplateToLabel>>,
+    TError,
+    { data: BodyType<SendToLabelBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendTemplateToLabel>>,
+  TError,
+  { data: BodyType<SendToLabelBody> },
+  TContext
+> => {
+  return useMutation(getSendTemplateToLabelMutationOptions(options));
 };
 
 /**

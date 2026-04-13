@@ -246,6 +246,50 @@ export const BulkAssignSubscribersToLabelResponse = zod.object({
 });
 
 /**
+ * @summary List WhatsApp message templates
+ */
+export const GetTemplateListBody = zod.object({
+  apiToken: zod.string(),
+  phoneNumberId: zod.string(),
+});
+
+export const GetTemplateListResponse = zod.object({
+  templates: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      message: zod.string().describe("The template message content"),
+    }),
+  ),
+});
+
+/**
+ * @summary Send a message template to all subscribers of a label
+ */
+export const SendTemplateToLabelBody = zod.object({
+  apiToken: zod.string(),
+  phoneNumberId: zod.string(),
+  labelName: zod
+    .string()
+    .describe(
+      "Label name — all subscribers with this label will receive the message",
+    ),
+  message: zod.string().describe("The message text to send"),
+});
+
+export const SendTemplateToLabelResponse = zod.object({
+  total: zod.number(),
+  succeeded: zod.number(),
+  failed: zod.number(),
+  errors: zod.array(
+    zod.object({
+      phone: zod.string(),
+      reason: zod.string(),
+    }),
+  ),
+});
+
+/**
  * @summary Get WhatsApp account business name
  */
 export const GetAccountInfoQueryParams = zod.object({

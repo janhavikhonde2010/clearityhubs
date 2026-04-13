@@ -143,6 +143,43 @@ export interface ButtonStatsResponse {
   insights: ButtonStatsResponseInsights;
 }
 
+export interface TemplateItem {
+  id: string;
+  name: string;
+  /** The template message content */
+  message: string;
+}
+
+export interface GetTemplateListBody {
+  apiToken: string;
+  phoneNumberId: string;
+}
+
+export interface GetTemplateListResponse {
+  templates: TemplateItem[];
+}
+
+export interface SendToLabelBody {
+  apiToken: string;
+  phoneNumberId: string;
+  /** Label name — all subscribers with this label will receive the message */
+  labelName: string;
+  /** The message text to send */
+  message: string;
+}
+
+export type SendToLabelResponseErrorsItem = {
+  phone: string;
+  reason: string;
+};
+
+export interface SendToLabelResponse {
+  total: number;
+  succeeded: number;
+  failed: number;
+  errors: SendToLabelResponseErrorsItem[];
+}
+
 export type GetSubscribersParams = {
   apiToken: string;
   phoneNumberId: string;
@@ -204,6 +241,10 @@ export type CreateLabel400 = {
 };
 
 export type AssignSubscriberToLabel400 = {
+  error: string;
+};
+
+export type SendTemplateToLabel400 = {
   error: string;
 };
 

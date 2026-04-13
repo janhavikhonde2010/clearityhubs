@@ -449,4 +449,96 @@ router.get("/account-info", async (req, res): Promise<void> => {
   res.json(info);
 });
 
+router.post("/templates/list", async (req, res): Promise<void> => {
+  const { apiToken, phoneNumberId } = req.body as {
+    apiToken?: string;
+    phoneNumberId?: string;
+  };
+
+  if (!apiToken || !phoneNumberId) {
+    res.status(400).json({ error: "apiToken and phoneNumberId are required" });
+    return;
+  }
+
+  const params = new URLSearchParams({
+    apiToken,
+    phone_number_id: phoneNumberId,
+  });
+
+  const twpRes = await fetch(
+    "https://growth.thewiseparrot.club/api/v1/whatsapp/template/list",
+    { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params.toString(), signal: AbortSignal.timeout(10_000) }
+  );
+
+  const raw = await twpRes.json() as { status?: string; message?: unknown };
+
+  if (!twpRes.ok || raw.status !== "1") {
+    res.json({ templates: [] });
+    return;
+  }
+
+  const items = Array.isArray(raw.message) ? raw.message as Array<Record<string, unknown>> : [];
+  const templates = items.map((item) => ({
+    id: String(item["id"] ?? item["template_id"] ?? ""),
+    name: String(item["name"] ?? item["template_name"] ?? ""),
+    message: String(item["message"] ?? item["body"] ?? item["template"] ?? item["text"] ?? ""),
+  })).filter((t) => t.name);
+
+  res.json({ templates });
+});
+
+router.post("/templates/send-to-label", async (req, res): Promise<void> => {
+  const { apiToken, phoneNumberId, labelName, message } = req.body as {
+    apiToken?: string;
+    phoneNumberId?: string;
+    labelName?: string;
+    message?: string;
+  };
+
+  if (!apiToken || !phoneNumberId || !labelName?.trim() || !message?.trim()) {
+    res.status(400).json({ error: "apiToken, phoneNumberId, labelName and message are required" });
+    return;
+  }
+
+  const allSubscribers = await getProcessedSubscribers(apiToken, phoneNumberId);
+  const targets = allSubscribers.filter((s) => s.labelName === labelName.trim());
+
+  if (targets.length === 0) {
+    res.json({ total: 0, succeeded: 0, failed: 0, errors: [] });
+    return;
+  }
+
+  const errors: { phone: string; reason: string }[] = [];
+  let succeeded = 0;
+
+  const BATCH = 5;
+  for (let i = 0; i < targets.length; i += BATCH) {
+    const batch = targets.slice(i, i + BATCH);
+    await Promise.all(batch.map(async (sub) => {
+      const sendParams = new URLSearchParams({
+        apiToken,
+        phone_number_id: phoneNumberId,
+        message: message.trim(),
+        phone_number: sub.phoneNumber,
+      });
+      try {
+        const r = await fetch(
+          "https://growth.thewiseparrot.club/api/v1/whatsapp/send",
+          { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: sendParams.toString(), signal: AbortSignal.timeout(10_000) }
+        );
+        const rawResp = await r.json() as { status?: string; message?: string };
+        if (r.ok && rawResp.status === "1") {
+          succeeded++;
+        } else {
+          errors.push({ phone: sub.phoneNumber, reason: rawResp.message ?? `HTTP ${r.status}` });
+        }
+      } catch (err) {
+        errors.push({ phone: sub.phoneNumber, reason: err instanceof Error ? err.message : "Unknown error" });
+      }
+    }));
+  }
+
+  res.json({ total: targets.length, succeeded, failed: errors.length, errors });
+});
+
 export default router;

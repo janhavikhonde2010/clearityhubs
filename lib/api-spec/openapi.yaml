@@ -314,6 +314,55 @@ paths:
               schema:
                 $ref: "#/components/schemas/BulkAssignResponse"
 
+  /templates/list:
+    post:
+      operationId: getTemplateList
+      tags: [dashboard]
+      summary: List WhatsApp message templates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GetTemplateListBody"
+      responses:
+        "200":
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetTemplateListResponse"
+
+  /templates/send-to-label:
+    post:
+      operationId: sendTemplateToLabel
+      tags: [dashboard]
+      summary: Send a message template to all subscribers of a label
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendToLabelBody"
+      responses:
+        "200":
+          description: Send result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendToLabelResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                  - error
+
   /account-info:
     get:
       operationId: getAccountInfo
@@ -668,3 +717,85 @@ components:
         - totalClicks
         - buttons
         - insights
+
+    TemplateItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        message:
+          type: string
+          description: The template message content
+      required:
+        - id
+        - name
+        - message
+
+    GetTemplateListBody:
+      type: object
+      properties:
+        apiToken:
+          type: string
+        phoneNumberId:
+          type: string
+      required:
+        - apiToken
+        - phoneNumberId
+
+    GetTemplateListResponse:
+      type: object
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/TemplateItem"
+      required:
+        - templates
+
+    SendToLabelBody:
+      type: object
+      properties:
+        apiToken:
+          type: string
+        phoneNumberId:
+          type: string
+        labelName:
+          type: string
+          description: Label name — all subscribers with this label will receive the message
+        message:
+          type: string
+          description: The message text to send
+      required:
+        - apiToken
+        - phoneNumberId
+        - labelName
+        - message
+
+    SendToLabelResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        succeeded:
+          type: integer
+        failed:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              phone:
+                type: string
+              reason:
+                type: string
+            required:
+              - phone
+              - reason
+      required:
+        - total
+        - succeeded
+        - failed
+        - errors
