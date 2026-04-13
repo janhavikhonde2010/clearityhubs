@@ -7,6 +7,7 @@ import {
   GetLabelStatsQueryParams,
 } from "@workspace/api-zod";
 import { fetchSubscribers, processSubscribers, fetchAccountInfo, type ProcessedSubscriber } from "../lib/twp-api";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
@@ -510,7 +511,12 @@ router.post("/templates/send-to-label", async (req, res): Promise<void> => {
   }
 
   const allSubscribers = await getProcessedSubscribers(apiToken, phoneNumberId);
-  const targets = allSubscribers.filter((s) => s.labelName === labelName.trim());
+  const targetLabel = labelName.trim();
+  const targets = allSubscribers.filter((s) =>
+    s.allLabelNames.some((l) => l === targetLabel) || s.labelName === targetLabel
+  );
+
+  logger.info({ targetLabel, totalSubscribers: allSubscribers.length, matched: targets.length }, "send-to-label: matched subscribers");
 
   if (targets.length === 0) {
     res.json({ total: 0, succeeded: 0, failed: 0, errors: [] });
@@ -557,6 +563,7 @@ router.post("/templates/send-to-label", async (req, res): Promise<void> => {
         if (r.ok && rawResp.status === "1") {
           succeeded++;
         } else {
+          logger.warn({ phone: sub.phoneNumber, httpStatus: r.status, twpResponse: rawResp }, "send-to-label: TWP send failed");
           errors.push({ phone: sub.phoneNumber, reason: rawResp.message ?? `HTTP ${r.status}` });
         }
       } catch (err) {

@@ -38,6 +38,7 @@ export interface ProcessedSubscriber {
   phoneNumber: string;
   subscriberId: number | null;
   labelName: string;
+  allLabelNames: string[];
   lastMessageTime: string | null;
   assignedAgent: string | null;
   assignedSequence: string | null;
@@ -322,13 +323,10 @@ export async function processSubscribers(
         const lastUserText = lastUserMsg ? extractTextFromContent(lastUserMsg.message_content) : null;
 
         // Parse label_names (comma-separated string)
-        const labelName =
-          sub.label_names
-            ? sub.label_names
-                .split(",")
-                .map((l) => l.trim())
-                .filter(Boolean)[0] ?? "Unlabeled"
-            : "Unlabeled";
+        const allLabelNames = sub.label_names
+          ? sub.label_names.split(",").map((l) => l.trim()).filter(Boolean)
+          : [];
+        const labelName = allLabelNames[0] ?? "Unlabeled";
 
         const buttonClicks = extractButtonClicks(messages);
 
@@ -337,6 +335,7 @@ export async function processSubscribers(
           phoneNumber,
           subscriberId: sub.subscriber_id ?? null,
           labelName,
+          allLabelNames,
           lastMessageTime: sub.last_message_time,
           assignedAgent,
           assignedSequence,
