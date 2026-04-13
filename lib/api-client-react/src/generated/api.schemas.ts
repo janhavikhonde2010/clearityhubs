@@ -72,6 +72,8 @@ export interface BulkAssignBody {
   labelId: string;
   /** List of phone numbers to assign */
   phoneNumbers: string[];
+  /** Optional names parallel to phoneNumbers (used when creating new subscribers) */
+  names?: string[];
 }
 
 export type BulkAssignResponseErrorsItem = {
@@ -82,6 +84,8 @@ export type BulkAssignResponseErrorsItem = {
 export interface BulkAssignResponse {
   total: number;
   succeeded: number;
+  /** Number of new subscribers created before assigning */
+  created: number;
   failed: number;
   errors: BulkAssignResponseErrorsItem[];
 }
@@ -97,6 +101,8 @@ export interface AssignSubscriberBody {
   phoneNumber: string;
   /** Comma-separated label IDs */
   labelIds: string;
+  /** Optional name for the subscriber (used when creating a new subscriber if not found) */
+  name?: string;
 }
 
 export interface CreateLabelBody {

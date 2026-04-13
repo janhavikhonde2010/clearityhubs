@@ -12,4 +12,6 @@ export interface AssignSubscriberBody {
   phoneNumber: string;
   /** Comma-separated label IDs */
   labelIds: string;
+  /** Optional name for the subscriber (used when creating a new subscriber if not found) */
+  name?: string;
 }

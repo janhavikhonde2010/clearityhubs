@@ -199,6 +199,12 @@ export const AssignSubscriberToLabelBody = zod.object({
   phoneNumberId: zod.string(),
   phoneNumber: zod.string(),
   labelIds: zod.string().describe("Comma-separated label IDs"),
+  name: zod
+    .string()
+    .optional()
+    .describe(
+      "Optional name for the subscriber (used when creating a new subscriber if not found)",
+    ),
 });
 
 export const AssignSubscriberToLabelResponse = zod.object({
@@ -216,11 +222,20 @@ export const BulkAssignSubscribersToLabelBody = zod.object({
   phoneNumbers: zod
     .array(zod.string())
     .describe("List of phone numbers to assign"),
+  names: zod
+    .array(zod.string())
+    .optional()
+    .describe(
+      "Optional names parallel to phoneNumbers (used when creating new subscribers)",
+    ),
 });
 
 export const BulkAssignSubscribersToLabelResponse = zod.object({
   total: zod.number(),
   succeeded: zod.number(),
+  created: zod
+    .number()
+    .describe("Number of new subscribers created before assigning"),
   failed: zod.number(),
   errors: zod.array(
     zod.object({

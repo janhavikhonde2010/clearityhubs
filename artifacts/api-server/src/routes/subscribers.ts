@@ -272,12 +272,26 @@ router.get("/labels/list", async (req, res): Promise<void> => {
   res.json({ labels });
 });
 
+async function createSubscriber(apiToken: string, phoneNumberId: string, phoneNumber: string, name: string): Promise<void> {
+  const params = new URLSearchParams({
+    apiToken,
+    phoneNumberID: phoneNumberId,
+    name,
+    phoneNumber,
+  });
+  await fetch(
+    "https://growth.thewiseparrot.club/api/v1/whatsapp/subscriber/create",
+    { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params.toString(), signal: AbortSignal.timeout(10_000) }
+  );
+}
+
 router.post("/labels/bulk-assign", async (req, res): Promise<void> => {
-  const { apiToken, phoneNumberId, labelId, phoneNumbers } = req.body as {
+  const { apiToken, phoneNumberId, labelId, phoneNumbers, names } = req.body as {
     apiToken?: string;
     phoneNumberId?: string;
     labelId?: string;
     phoneNumbers?: unknown;
+    names?: unknown;
   };
 
   if (!apiToken || !phoneNumberId || !labelId?.trim() || !Array.isArray(phoneNumbers) || phoneNumbers.length === 0) {
@@ -286,15 +300,18 @@ router.post("/labels/bulk-assign", async (req, res): Promise<void> => {
   }
 
   const numbers = (phoneNumbers as unknown[]).map(String).filter(Boolean);
+  const nameList = Array.isArray(names) ? (names as unknown[]).map(String) : [];
   const errors: { phone: string; reason: string }[] = [];
   let succeeded = 0;
+  let created = 0;
 
   // Process in batches of 5 concurrent requests to avoid overwhelming the TWP API
   const BATCH = 5;
   for (let i = 0; i < numbers.length; i += BATCH) {
     const batch = numbers.slice(i, i + BATCH);
-    await Promise.all(batch.map(async (phone) => {
-      const params = new URLSearchParams({
+    await Promise.all(batch.map(async (phone, batchIdx) => {
+      const globalIdx = i + batchIdx;
+      const assignParams = new URLSearchParams({
         apiToken,
         phone_number_id: phoneNumberId,
         phone_number: phone,
@@ -303,13 +320,27 @@ router.post("/labels/bulk-assign", async (req, res): Promise<void> => {
       try {
         const r = await fetch(
           "https://growth.thewiseparrot.club/api/v1/whatsapp/subscriber/chat/assign-labels",
-          { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params.toString(), signal: AbortSignal.timeout(10_000) }
+          { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: assignParams.toString(), signal: AbortSignal.timeout(10_000) }
         );
         const raw = await r.json() as { status?: string; message?: string };
         if (r.ok && raw.status === "1") {
           succeeded++;
         } else {
-          errors.push({ phone, reason: raw.message ?? `HTTP ${r.status}` });
+          // Subscriber not found — create them, then retry assign
+          const subscriberName = (nameList[globalIdx] ?? "").trim() || phone;
+          await createSubscriber(apiToken, phoneNumberId, phone, subscriberName);
+          created++;
+
+          const r2 = await fetch(
+            "https://growth.thewiseparrot.club/api/v1/whatsapp/subscriber/chat/assign-labels",
+            { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: assignParams.toString(), signal: AbortSignal.timeout(10_000) }
+          );
+          const raw2 = await r2.json() as { status?: string; message?: string };
+          if (r2.ok && raw2.status === "1") {
+            succeeded++;
+          } else {
+            errors.push({ phone, reason: raw2.message ?? `HTTP ${r2.status}` });
+          }
         }
       } catch (err) {
         errors.push({ phone, reason: err instanceof Error ? err.message : "Unknown error" });
@@ -317,15 +348,16 @@ router.post("/labels/bulk-assign", async (req, res): Promise<void> => {
     }));
   }
 
-  res.json({ total: numbers.length, succeeded, failed: errors.length, errors });
+  res.json({ total: numbers.length, succeeded, created, failed: errors.length, errors });
 });
 
 router.post("/labels/assign-subscriber", async (req, res): Promise<void> => {
-  const { apiToken, phoneNumberId, phoneNumber, labelIds } = req.body as {
+  const { apiToken, phoneNumberId, phoneNumber, labelIds, name } = req.body as {
     apiToken?: string;
     phoneNumberId?: string;
     phoneNumber?: string;
     labelIds?: string;
+    name?: string;
   };
 
   if (!apiToken || !phoneNumberId || !phoneNumber?.trim() || !labelIds?.trim()) {
@@ -333,10 +365,11 @@ router.post("/labels/assign-subscriber", async (req, res): Promise<void> => {
     return;
   }
 
+  const phone = phoneNumber.trim();
   const params = new URLSearchParams({
     apiToken,
     phone_number_id: phoneNumberId,
-    phone_number: phoneNumber.trim(),
+    phone_number: phone,
     label_ids: labelIds.trim(),
   });
 
@@ -348,8 +381,23 @@ router.post("/labels/assign-subscriber", async (req, res): Promise<void> => {
   const raw = await twpRes.json() as { status?: string; message?: string };
 
   if (!twpRes.ok || raw.status !== "1") {
-    const msg = typeof raw.message === "string" ? raw.message : "Failed to assign subscriber";
-    res.status(400).json({ success: false, message: msg });
+    // Subscriber not found — create them, then retry assign
+    const subscriberName = (name ?? "").trim() || phone;
+    await createSubscriber(apiToken, phoneNumberId, phone, subscriberName);
+
+    const twpRes2 = await fetch(
+      "https://growth.thewiseparrot.club/api/v1/whatsapp/subscriber/chat/assign-labels",
+      { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: params.toString() }
+    );
+    const raw2 = await twpRes2.json() as { status?: string; message?: string };
+
+    if (!twpRes2.ok || raw2.status !== "1") {
+      const msg = typeof raw2.message === "string" ? raw2.message : "Failed to assign subscriber";
+      res.status(400).json({ success: false, message: msg });
+      return;
+    }
+
+    res.json({ success: true, message: `New subscriber created and assigned successfully` });
     return;
   }
 

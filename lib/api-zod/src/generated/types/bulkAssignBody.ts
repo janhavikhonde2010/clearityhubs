@@ -12,4 +12,6 @@ export interface BulkAssignBody {
   labelId: string;
   /** List of phone numbers to assign */
   phoneNumbers: string[];
+  /** Optional names parallel to phoneNumbers (used when creating new subscribers) */
+  names?: string[];
 }

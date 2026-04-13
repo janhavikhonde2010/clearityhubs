@@ -227,6 +227,7 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
 
   // ─── Single assign state ───
   const [phone, setPhone] = useState("");
+  const [subscriberName, setSubscriberName] = useState("");
   const [selectedLabelId, setSelectedLabelId] = useState("");
   const [assignFeedback, setAssignFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
@@ -247,9 +248,10 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
   // ─── Bulk assign (Excel) state ───
   const [bulkLabelId, setBulkLabelId] = useState("");
   const [parsedPhones, setParsedPhones] = useState<string[]>([]);
+  const [parsedNames, setParsedNames] = useState<string[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [bulkResult, setBulkResult] = useState<{ total: number; succeeded: number; failed: number; errors: { phone: string; reason: string }[] } | null>(null);
+  const [bulkResult, setBulkResult] = useState<{ total: number; succeeded: number; created: number; failed: number; errors: { phone: string; reason: string }[] } | null>(null);
 
   const { mutate: bulkAssign, isPending: bulkAssigning } = useBulkAssignSubscribersToLabel({
     mutation: {
@@ -261,6 +263,7 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
   const handleFileUpload = (file: File) => {
     setParseError(null);
     setParsedPhones([]);
+    setParsedNames([]);
     setBulkResult(null);
     setFileName(file.name);
 
@@ -277,16 +280,29 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
         const phoneColIdx = header.findIndex((h) => h.includes("phone") || h.includes("mobile") || h.includes("number"));
         const colIdx = phoneColIdx >= 0 ? phoneColIdx : 0;
 
-        const phones = rows
-          .slice(phoneColIdx >= 0 ? 1 : 0) // skip header row if column was found
-          .map((row) => String((row as unknown[])[colIdx] ?? "").replace(/\D/g, "").trim())
-          .filter((p) => p.length >= 7);
+        // Also extract names if a "name" column exists
+        const nameColIdx = header.findIndex((h) => h === "name" || h === "full name" || h === "fullname" || h === "subscriber name");
+
+        const dataRows = rows.slice(phoneColIdx >= 0 ? 1 : 0);
+
+        const phones: string[] = [];
+        const names: string[] = [];
+
+        for (const row of dataRows) {
+          const phone = String((row as unknown[])[colIdx] ?? "").replace(/\D/g, "").trim();
+          if (phone.length >= 7) {
+            phones.push(phone);
+            const name = nameColIdx >= 0 ? String((row as unknown[])[nameColIdx] ?? "").trim() : "";
+            names.push(name);
+          }
+        }
 
         if (phones.length === 0) {
           setParseError("No valid phone numbers found. Make sure your Excel has a column named 'phone' or 'phone_number'.");
           return;
         }
         setParsedPhones(phones);
+        setParsedNames(names);
       } catch {
         setParseError("Could not read the file. Please upload a valid .xlsx or .xls file.");
       }
@@ -355,7 +371,7 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
             {/* Sub-mode toggle */}
             <div className="flex gap-1 mb-4 p-1 rounded-xl w-fit" style={{ background: "#F3F4F6" }}>
               {(["single", "bulk"] as const).map((m) => (
-                <button key={m} onClick={() => { setAssignMode(m); setBulkResult(null); setParseError(null); setParsedPhones([]); setFileName(null); }}
+                <button key={m} onClick={() => { setAssignMode(m); setBulkResult(null); setParseError(null); setParsedPhones([]); setParsedNames([]); setFileName(null); }}
                   className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all"
                   style={{ background: assignMode === m ? "#fff" : "transparent", color: assignMode === m ? "#111827" : GRAY, boxShadow: assignMode === m ? "0 1px 3px rgba(0,0,0,.10)" : "none" }}>
                   {m === "single" ? <><Users className="w-3 h-3" />Single</> : <><FileSpreadsheet className="w-3 h-3" />Import Excel</>}
@@ -365,21 +381,31 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
 
             {assignMode === "single" ? (
               <>
-                <div className="flex items-center gap-3">
-                  <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)}
-                    placeholder="Phone number (e.g. 919876543210)" maxLength={20}
-                    className={inputCls} style={inputStyle}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = BLUE; e.currentTarget.style.background = "#fff"; }}
-                    onBlur={(e)  => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.background = "#F9FAFB"; }} />
-                  <LabelSelect value={selectedLabelId} onChange={setSelectedLabelId} />
-                  <button onClick={() => { if (!phone.trim() || !selectedLabelId || assigning) return; setAssignFeedback(null); assignSubscriber({ data: { apiToken, phoneNumberId, phoneNumber: phone.trim(), labelIds: selectedLabelId } }); }}
-                    disabled={!phone.trim() || !selectedLabelId || assigning}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-50"
-                    style={{ background: BLUE, color: "#fff", minWidth: 110 }}>
-                    {assigning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
-                    {assigning ? "Assigning…" : "Assign"}
-                  </button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-3">
+                    <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)}
+                      placeholder="Phone number (e.g. 919876543210)" maxLength={20}
+                      className={inputCls} style={inputStyle}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = BLUE; e.currentTarget.style.background = "#fff"; }}
+                      onBlur={(e)  => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.background = "#F9FAFB"; }} />
+                    <input type="text" value={subscriberName} onChange={(e) => setSubscriberName(e.target.value)}
+                      placeholder="Name (for new subscribers)" maxLength={80}
+                      className={inputCls} style={inputStyle}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = BLUE; e.currentTarget.style.background = "#fff"; }}
+                      onBlur={(e)  => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.background = "#F9FAFB"; }} />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <LabelSelect value={selectedLabelId} onChange={setSelectedLabelId} />
+                    <button onClick={() => { if (!phone.trim() || !selectedLabelId || assigning) return; setAssignFeedback(null); assignSubscriber({ data: { apiToken, phoneNumberId, phoneNumber: phone.trim(), labelIds: selectedLabelId, name: subscriberName.trim() || undefined } }); }}
+                      disabled={!phone.trim() || !selectedLabelId || assigning}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-50"
+                      style={{ background: BLUE, color: "#fff", minWidth: 110 }}>
+                      {assigning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Users className="w-4 h-4" />}
+                      {assigning ? "Assigning…" : "Assign"}
+                    </button>
+                  </div>
                 </div>
+                <p className="text-xs mt-1.5" style={{ color: GRAY }}>If the subscriber doesn't exist yet, they'll be created automatically and added to the label.</p>
                 {assignFeedback && (
                   <div className="mt-3 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium"
                     style={{ background: assignFeedback.ok ? "#F0FDF4" : "#FEF2F2", color: assignFeedback.ok ? GREEN_D : RED, border: `1px solid ${assignFeedback.ok ? "#BBF7D0" : "#FECACA"}` }}>
@@ -404,7 +430,7 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
                     <div className="text-center">
                       <p className="text-sm font-semibold" style={{ color: "#111827" }}>Drop your Excel file here</p>
                       <p className="text-xs mt-0.5" style={{ color: GRAY }}>or click to browse — .xlsx / .xls supported</p>
-                      <p className="text-xs mt-1" style={{ color: GRAY }}>Column named <span className="font-mono" style={{ color: BLUE }}>phone</span> or <span className="font-mono" style={{ color: BLUE }}>phone_number</span> will be used automatically</p>
+                      <p className="text-xs mt-1" style={{ color: GRAY }}>Columns: <span className="font-mono" style={{ color: BLUE }}>phone</span>/<span className="font-mono" style={{ color: BLUE }}>phone_number</span> (required) · <span className="font-mono" style={{ color: BLUE }}>name</span> (optional, for new subscribers)</p>
                     </div>
                     <input type="file" accept=".xlsx,.xls" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }} />
                   </label>
@@ -418,7 +444,7 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
                           {parsedPhones.length} numbers found
                         </span>
                       </div>
-                      <button onClick={() => { setParsedPhones([]); setFileName(null); setBulkResult(null); setParseError(null); }}
+                      <button onClick={() => { setParsedPhones([]); setParsedNames([]); setFileName(null); setBulkResult(null); setParseError(null); }}
                         className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors">
                         <X className="w-3.5 h-3.5" style={{ color: GRAY }} />
                       </button>
@@ -428,18 +454,23 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
                       <div className="max-h-28 overflow-y-auto">
                         <table className="w-full text-xs">
                           <thead style={{ background: "#F3F4F6" }}>
-                            <tr><th className="px-3 py-2 text-left font-semibold" style={{ color: GRAY }}>#</th><th className="px-3 py-2 text-left font-semibold" style={{ color: GRAY }}>Phone Number</th></tr>
+                            <tr>
+                              <th className="px-3 py-2 text-left font-semibold" style={{ color: GRAY }}>#</th>
+                              <th className="px-3 py-2 text-left font-semibold" style={{ color: GRAY }}>Phone Number</th>
+                              {parsedNames.some(n => n) && <th className="px-3 py-2 text-left font-semibold" style={{ color: GRAY }}>Name</th>}
+                            </tr>
                           </thead>
                           <tbody>
                             {parsedPhones.slice(0, 5).map((p, i) => (
                               <tr key={i} style={{ borderTop: `1px solid ${BORDER}` }}>
                                 <td className="px-3 py-1.5" style={{ color: GRAY }}>{i + 1}</td>
                                 <td className="px-3 py-1.5 font-mono" style={{ color: "#111827" }}>{p}</td>
+                                {parsedNames.some(n => n) && <td className="px-3 py-1.5" style={{ color: "#374151" }}>{parsedNames[i] || <span style={{ color: GRAY, fontStyle: "italic" }}>—</span>}</td>}
                               </tr>
                             ))}
                             {parsedPhones.length > 5 && (
                               <tr style={{ borderTop: `1px solid ${BORDER}` }}>
-                                <td colSpan={2} className="px-3 py-1.5 text-center" style={{ color: GRAY }}>
+                                <td colSpan={parsedNames.some(n => n) ? 3 : 2} className="px-3 py-1.5 text-center" style={{ color: GRAY }}>
                                   …and {parsedPhones.length - 5} more
                                 </td>
                               </tr>
@@ -464,7 +495,7 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
                     <LabelSelect value={bulkLabelId} onChange={setBulkLabelId} />
                     <button
                       disabled={!bulkLabelId || bulkAssigning}
-                      onClick={() => { if (!bulkLabelId || bulkAssigning) return; setBulkResult(null); bulkAssign({ data: { apiToken, phoneNumberId, labelId: bulkLabelId, phoneNumbers: parsedPhones } }); }}
+                      onClick={() => { if (!bulkLabelId || bulkAssigning) return; setBulkResult(null); bulkAssign({ data: { apiToken, phoneNumberId, labelId: bulkLabelId, phoneNumbers: parsedPhones, names: parsedNames.length > 0 ? parsedNames : undefined } }); }}
                       className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm disabled:opacity-50"
                       style={{ background: GREEN_D, color: "#fff", minWidth: 160 }}>
                       {bulkAssigning ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
@@ -477,10 +508,11 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
                 {bulkResult && (
                   <div className="mt-3 rounded-2xl border p-4" style={{ borderColor: BORDER }}>
                     <p className="text-sm font-semibold mb-3" style={{ color: "#111827" }}>Bulk Assignment Complete</p>
-                    <div className="grid grid-cols-3 gap-3 mb-3">
+                    <div className="grid grid-cols-4 gap-3 mb-3">
                       {[
                         { label: "Total", val: bulkResult.total, bg: "#F3F4F6",   color: "#374151" },
-                        { label: "Succeeded", val: bulkResult.succeeded, bg: "#DCFCE7", color: GREEN_D },
+                        { label: "Assigned", val: bulkResult.succeeded, bg: "#DCFCE7", color: GREEN_D },
+                        { label: "New Created", val: bulkResult.created ?? 0, bg: "#EFF6FF", color: BLUE },
                         { label: "Failed", val: bulkResult.failed,    bg: "#FEE2E2", color: RED       },
                       ].map(({ label, val, bg, color }) => (
                         <div key={label} className="rounded-xl p-3 text-center" style={{ background: bg }}>
@@ -503,7 +535,7 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
                         </div>
                       </div>
                     )}
-                    <button onClick={() => { setBulkResult(null); setParsedPhones([]); setFileName(null); setBulkLabelId(""); }}
+                    <button onClick={() => { setBulkResult(null); setParsedPhones([]); setParsedNames([]); setFileName(null); setBulkLabelId(""); }}
                       className="mt-3 text-xs font-semibold" style={{ color: BLUE }}>
                       Import another file
                     </button>

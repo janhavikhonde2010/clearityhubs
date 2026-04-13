@@ -10,6 +10,8 @@ import type { BulkAssignResponseErrorsItem } from "./bulkAssignResponseErrorsIte
 export interface BulkAssignResponse {
   total: number;
   succeeded: number;
+  /** Number of new subscribers created before assigning */
+  created: number;
   failed: number;
   errors: BulkAssignResponseErrorsItem[];
 }
