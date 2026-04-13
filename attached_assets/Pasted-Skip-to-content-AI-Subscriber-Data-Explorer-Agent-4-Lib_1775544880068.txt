@@ -1,0 +1,153 @@
+Skip to content
+
+AI
+
+Subscriber Data Explorer
+
+Agent
+4
+
+
+
+
+
+Library
+
+File tree
+Create apps, documents, images, and more with the agent
+
+Pasted-Analysis-Dashboard-Requirement-Detailed-OBJECTIVE--1775_1775543513724.txt
+use this apis
+
+For Get Subscriber : curl --location 'https://growth.thewiseparrot.club/api/v1/whatsapp/subscriber/list?apiToken=13707%7CAiDN7m8Jsa11oLZqPI67LpR0BXbGDHz3VSHR9gcx96c25920&phone_number_id=448487611678560&limit=10000'
+--header 'Cookie: PHPSESSID=h7bvlae2d150jrt55ntf5rig88; XSRF-TOKEN=yoBaRJkr97RPbbz9eR4CUANJ9h5qlvdZ2BfzEV7q; __Secure-app_session=EkQOfOCdhaoNOkwkA9uBpNIiDAnEFNQeVyw3vGIN; _btx5i0h383fscy9=_btxvp09jdshg54k2; come_from=eyJpdiI6ImxGUzlRSDNIVWwzUjFhbGpjM21IVnc9PSIsInZhbHVlIjoiYmhGZDF2SFBTYkQraWtkM1RvUWFXQlRkbU56NndzcFZWUldjcE1hTWFBSzRZV1JFa0RacVpEZnFmL29KQWYxbWRlQnNkTFI0bE5OR2RXSllGTTFSdVE9PSIsIm1hYyI6IjMwMGJiNzUwZTU2OGI5MTdjMjAyZTY1MTUzNTg1ZGNjNjgwZTc4Zjk1OGJiZjdhNGJlZjMzYmFmOTMwM2MzNjQiLCJ0YWciOiIifQ%3D%3D; first_landing_route=eyJpdiI6IjFwYk1JODROOGVVcGs0ZnV2OGVHR0E9PSIsInZhbHVlIjoiT3V5aFk1WGttTFpiMTllbktBQytuaFJxeC9xZCs3TWkxS3Y4WGdhQmYzd3d0NGdvM2t1WDEzVnZWZDUxV0Q0K01wZHRJYU9uV2xhZTcwamhBWEJXRVEveUZUNHJOakNuSXkxbzZsbGZST1pBUVVRMUovY0VmQ1ZXd3NxaXVyb2kwblE0VCsrUEdUZHFOL0t6ZW95VzlUNTJ5eGpnZGw3d0VFdkFPS0xYMDJBTnR5aFBMUjFILzRLQ2lPTGt6TzU4IiwibWFjIjoiYzJhNmYyZWNiN2U1NDJkNTE2ZTIwZjkzOTliMWU3N2Q2ZDExZDllMzE3MmJjOTdhMzJmZjVlOGE0ZWQ0OTM2ZCIsInRhZyI6IiJ9'
+
+get conversation use this :curl --location 'https://growth.thewiseparrot.club/api/v1/whatsapp/get/conversation?apiToken=13707%7CAiDN7m8Jsa11oLZqPI67LpR0BXbGDHz3VSHR9gcx96c25920&phone_number_id=448487611678560&phone_number=918888175971&limit=500'
+--header 'Cookie: PHPSESSID=h7bvlae2d150jrt55ntf5rig88; XSRF-TOKEN=yoBaRJkr97RPbbz9eR4CUANJ9h5qlvdZ2BfzEV7q; __Secure-app_session=EkQOfOCdhaoNOkwkA9uBpNIiDAnEFNQeVyw3vGIN; _btx5i0h383fscy9=_btxvp09jdshg54k2; come_from=eyJpdiI6ImxGUzlRSDNIVWwzUjFhbGpjM21IVnc9PSIsInZhbHVlIjoiYmhGZDF2SFBTYkQraWtkM1RvUWFXQlRkbU56NndzcFZWUldjcE1hTWFBSzRZV1JFa0RacVpEZnFmL29KQWYxbWRlQnNkTFI0bE5OR2RXSllGTTFSdVE9PSIsIm1hYyI6IjMwMGJiNzUwZTU2OGI5MTdjMjAyZTY1MTUzNTg1ZGNjNjgwZTc4Zjk1OGJiZjdhNGJlZjMzYmFmOTMwM2MzNjQiLCJ0YWciOiIifQ%3D%3D; first_landing_route=eyJpdiI6IjFwYk1JODROOGVVcGs0ZnV2OGVHR0E9PSIsInZhbHVlIjoiT3V5aFk1WGttTFpiMTllbktBQytuaFJxeC9xZCs3TWkxS3Y4WGdhQmYzd3d0NGdvM2t1WDEzVnZWZDUxV0Q0K01wZHRJYU9uV2xhZTcwamhBWEJXRVEveUZUNHJOakNuSXkxbzZsbGZST1pBUVVRMUovY0VmQ1ZXd3NxaXVyb2kwblE0VCsrUEdUZHFOL0t6ZW95VzlUNTJ5eGpnZGw3d0VFdkFPS0xYMDJBTnR5aFBMUjFILzRLQ2lPTGt6TzU4IiwibWFjIjoiYzJhNmYyZWNiN2U1NDJkNTE2ZTIwZjkzOTliMWU3N2Q2ZDExZDllMzE3MmJjOTdhMzJmZjVlOGE0ZWQ0OTM2ZCIsInRhZyI6IiJ9'
+
+How It working :
+Step 1: We call Subscriber List API where we get all subscriber list from our dashboard
+From Here we get:
+
+User Name :
+User Phone No:
+Label Name
+Last message time
+
+Step 2: Now when we get the User Phone No Then We Hit The Get Conversation API Where We get The :
+
+User Assign Agent
+User Assign Sequence
+User Assignment History
+User Last msg (Analyse lead is dorment or not)
+User Reply Count (How Many Msg user send )
+TWP Reply Count (how many msg The wise parrot send with sequence Msg)
+After msg Sequence How many leads reply (To check Msg sequence)
+Agent wise Assign leads
+
+Show less
+20 minutes ago
+You have reached your free quota limit
+
+
+Checkpoint made
+19 minutes ago
+
+Scroll to latest
+
+Message Agent…
+
+
+Plan
+
+
+
+Pasted-Analysis-Dashboard-Requirement-Detailed-OBJECTIVE--1775_1775543513724.txt
+Analysis Dashboard Requirement (Detailed)
+----------------------------------------
+
+OBJECTIVE: 
+Create an Analysis Dashboard to evaluate lead activity, agent performance, and message sequence effectiveness.
+
+----------------------------------------
+
+KEY DASHBOARD METRICS
+
+1. Agent-wise Data
+- Lead history (Date & Time-wise)
+- Label-wise segmentation
+
+2. Message Sequence Analysis
+- Total sequence messages sent
+- Number of leads reactivated after sequence
+
+3. Best Performing Sequence
+- Identify which sequence generates the highest reactivation rate
+
+4. User Reply vs Wise Parrot Reply
+- Compare user messages and bot replies (Wise Parrot + Sequence messages)
+
+5. Label-wise Bar Chart
+- Distribution of leads based on labels
+
+6. Dormant Leads Count
+- Leads with no reply from the user side
+
+7. Lead Data Details
+- Lead Name: message_content → contacts → profile → name
+- Phone Number: contacts → wa_id
+- Assignment Timeline: system messages containing "Conversation was assigned to..."
+- Current Assignee: Last assignment in the timeline
+- Assigned Sequence: e.g., Generic_Seq_Msg
+- Last User Activity: Last message date & time
+
+----------------------------------------
+
+SYSTEM WORKFLOW
+
+Step 1: Fetch Subscriber Data
+Call Subscriber List API to retrieve:
+- User Name
+- User Phone Number
+- Label Name
+- Last Message Time
+
+Step 2: Fetch Conversation Data
+Using Phone Number, call Get Conversation API to retrieve:
+- Assigned Agent
+- Assigned Sequence
+- Assignment History
+- Last User Message
+- User Reply Count
+- Wise Parrot Reply Count
+- Post-sequence replies
+- Agent-wise lead assignment
+
+Step 3: User Input
+- Account API Key
+- Phone Number ID
+
+Step 4: Backend Processing
+- Call APIs using credentials
+- Process data
+- Generate dashboard insights
+
+----------------------------------------
+
+DASHBOARD OUTPUTS
+- Agent-wise lead analysis
+- Message sequence performance
+- Best performing sequence
+- User vs Bot reply comparison
+- Label-wise bar chart
+- Dormant leads count
+- Detailed lead information
+
+----------------------------------------
+
+SUMMARY
+This dashboard provides a complete analytical view of:
+- Lead engagement
+- Agent performance
+- Message sequence effectiveness
+- User interaction behavior

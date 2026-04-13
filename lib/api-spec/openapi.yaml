@@ -1,0 +1,658 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: subscribers
+    description: Subscriber operations
+  - name: dashboard
+    description: Dashboard analytics
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /subscribers:
+    get:
+      operationId: getSubscribers
+      tags: [subscribers]
+      summary: Get all subscribers with processed conversation data
+      parameters:
+        - name: apiToken
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: phoneNumberId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of processed subscribers
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscribers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProcessedSubscriber"
+                  total:
+                    type: integer
+                required:
+                  - subscribers
+                  - total
+
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get dashboard summary metrics
+      parameters:
+        - name: apiToken
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: phoneNumberId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/agent-stats:
+    get:
+      operationId: getAgentStats
+      tags: [dashboard]
+      summary: Get agent-wise lead statistics
+      parameters:
+        - name: apiToken
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: phoneNumberId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Agent statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AgentStat"
+                required:
+                  - agents
+
+  /dashboard/sequence-stats:
+    get:
+      operationId: getSequenceStats
+      tags: [dashboard]
+      summary: Get message sequence performance statistics
+      parameters:
+        - name: apiToken
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: phoneNumberId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Sequence statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sequences:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SequenceStat"
+                required:
+                  - sequences
+
+  /dashboard/button-stats:
+    get:
+      operationId: getButtonStats
+      tags: [dashboard]
+      summary: Get button click analytics from interactive messages
+      parameters:
+        - name: apiToken
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: phoneNumberId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Button click statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ButtonStatsResponse"
+
+  /dashboard/label-stats:
+    get:
+      operationId: getLabelStats
+      tags: [dashboard]
+      summary: Get label-wise lead distribution
+      parameters:
+        - name: apiToken
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: phoneNumberId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Label statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LabelStat"
+                required:
+                  - labels
+
+  /labels/list:
+    get:
+      operationId: getLabelList
+      tags: [dashboard]
+      summary: Get all labels with their IDs
+      parameters:
+        - name: apiToken
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: phoneNumberId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of labels
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  labels:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/LabelItem"
+                required:
+                  - labels
+
+  /labels/create:
+    post:
+      operationId: createLabel
+      tags: [dashboard]
+      summary: Create a new label in The Wise Parrot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLabelBody"
+      responses:
+        "200":
+          description: Label created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateLabelResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                  - error
+
+  /labels/assign-subscriber:
+    post:
+      operationId: assignSubscriberToLabel
+      tags: [dashboard]
+      summary: Assign a subscriber to one or more labels
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignSubscriberBody"
+      responses:
+        "200":
+          description: Subscriber assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateLabelResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                required:
+                  - error
+
+  /labels/bulk-assign:
+    post:
+      operationId: bulkAssignSubscribersToLabel
+      tags: [dashboard]
+      summary: Assign multiple subscribers to a label from a list of phone numbers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkAssignBody"
+      responses:
+        "200":
+          description: Bulk assignment result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkAssignResponse"
+
+  /account-info:
+    get:
+      operationId: getAccountInfo
+      tags: [dashboard]
+      summary: Get WhatsApp account business name
+      parameters:
+        - name: apiToken
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: phoneNumberId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Account info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountInfo"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    AccountInfo:
+      type: object
+      properties:
+        businessName:
+          type: string
+          nullable: true
+      required:
+        - businessName
+
+    ProcessedSubscriber:
+      type: object
+      properties:
+        name:
+          type: string
+        phoneNumber:
+          type: string
+        labelName:
+          type: string
+        lastMessageTime:
+          type: string
+          nullable: true
+        assignedAgent:
+          type: string
+          nullable: true
+        assignedSequence:
+          type: string
+          nullable: true
+        userReplyCount:
+          type: integer
+        twpReplyCount:
+          type: integer
+        isDormant:
+          type: boolean
+        lastUserMessage:
+          type: string
+          nullable: true
+        lastUserMessageTime:
+          type: string
+          nullable: true
+        assignmentHistory:
+          type: array
+          items:
+            type: object
+            properties:
+              agent:
+                type: string
+              timestamp:
+                type: string
+            required:
+              - agent
+              - timestamp
+        postSequenceReplies:
+          type: integer
+      required:
+        - name
+        - phoneNumber
+        - labelName
+        - userReplyCount
+        - twpReplyCount
+        - isDormant
+        - postSequenceReplies
+        - assignmentHistory
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalLeads:
+          type: integer
+        dormantLeads:
+          type: integer
+        activeLeads:
+          type: integer
+        totalUserReplies:
+          type: integer
+        totalTwpReplies:
+          type: integer
+        totalSequencesSent:
+          type: integer
+        leadsReactivatedAfterSequence:
+          type: integer
+        reactivationRate:
+          type: number
+      required:
+        - totalLeads
+        - dormantLeads
+        - activeLeads
+        - totalUserReplies
+        - totalTwpReplies
+        - totalSequencesSent
+        - leadsReactivatedAfterSequence
+        - reactivationRate
+
+    AgentStat:
+      type: object
+      properties:
+        agentName:
+          type: string
+        leadsAssigned:
+          type: integer
+        activeLeads:
+          type: integer
+        dormantLeads:
+          type: integer
+        avgUserReplies:
+          type: number
+      required:
+        - agentName
+        - leadsAssigned
+        - activeLeads
+        - dormantLeads
+        - avgUserReplies
+
+    SequenceStat:
+      type: object
+      properties:
+        sequenceName:
+          type: string
+        totalSent:
+          type: integer
+        repliesAfterSequence:
+          type: integer
+        reactivationRate:
+          type: number
+      required:
+        - sequenceName
+        - totalSent
+        - repliesAfterSequence
+        - reactivationRate
+
+    LabelStat:
+      type: object
+      properties:
+        labelName:
+          type: string
+        count:
+          type: integer
+        dormantCount:
+          type: integer
+      required:
+        - labelName
+        - count
+        - dormantCount
+
+    BulkAssignBody:
+      type: object
+      properties:
+        apiToken:
+          type: string
+        phoneNumberId:
+          type: string
+        labelId:
+          type: string
+        phoneNumbers:
+          type: array
+          items:
+            type: string
+          description: List of phone numbers to assign
+      required:
+        - apiToken
+        - phoneNumberId
+        - labelId
+        - phoneNumbers
+
+    BulkAssignResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        succeeded:
+          type: integer
+        failed:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              phone:
+                type: string
+              reason:
+                type: string
+            required:
+              - phone
+              - reason
+      required:
+        - total
+        - succeeded
+        - failed
+        - errors
+
+    LabelItem:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - name
+
+    AssignSubscriberBody:
+      type: object
+      properties:
+        apiToken:
+          type: string
+        phoneNumberId:
+          type: string
+        phoneNumber:
+          type: string
+        labelIds:
+          type: string
+          description: Comma-separated label IDs
+      required:
+        - apiToken
+        - phoneNumberId
+        - phoneNumber
+        - labelIds
+
+    CreateLabelBody:
+      type: object
+      properties:
+        apiToken:
+          type: string
+        phoneNumberId:
+          type: string
+        labelName:
+          type: string
+      required:
+        - apiToken
+        - phoneNumberId
+        - labelName
+
+    CreateLabelResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
+
+    ButtonSubscriber:
+      type: object
+      properties:
+        name:
+          type: string
+        phoneNumber:
+          type: string
+      required:
+        - name
+        - phoneNumber
+
+    ButtonStat:
+      type: object
+      properties:
+        buttonName:
+          type: string
+        totalClicks:
+          type: integer
+        uniqueLeads:
+          type: integer
+        clickRate:
+          type: number
+          description: Percentage of total clicks this button received
+        subscribers:
+          type: array
+          items:
+            $ref: "#/components/schemas/ButtonSubscriber"
+          description: List of subscribers who clicked this button
+      required:
+        - buttonName
+        - totalClicks
+        - uniqueLeads
+        - clickRate
+        - subscribers
+
+    ButtonStatsResponse:
+      type: object
+      properties:
+        totalClicks:
+          type: integer
+        buttons:
+          type: array
+          items:
+            $ref: "#/components/schemas/ButtonStat"
+        insights:
+          type: object
+          properties:
+            mostClicked:
+              type: string
+              nullable: true
+            leastClicked:
+              type: string
+              nullable: true
+            bestConversion:
+              type: string
+              nullable: true
+          required:
+            - mostClicked
+            - leastClicked
+            - bestConversion
+      required:
+        - totalClicks
+        - buttons
+        - insights

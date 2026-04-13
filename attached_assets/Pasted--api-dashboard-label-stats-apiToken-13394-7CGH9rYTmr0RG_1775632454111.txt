@@ -1,0 +1,18 @@
+/api/dashboard/label-stats?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: the server responded with a status of 504 ()
+/api/dashboard/sequence-stats?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: the server responded with a status of 504 ()
+/api/dashboard/button-stats?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: the server responded with a status of 504 ()
+/api/dashboard/agent-stats?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: the server responded with a status of 504 ()
+/api/subscribers?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: the server responded with a status of 504 ()
+/api/dashboard/summary?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: the server responded with a status of 504 ()
+/api/dashboard/sequence-stats?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: net::ERR_NETWORK_CHANGED
+/api/subscribers?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: net::ERR_NETWORK_CHANGED
+/api/dashboard/label-stats?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: net::ERR_NETWORK_CHANGED
+/api/dashboard/summary?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: net::ERR_NETWORK_CHANGED
+/api/dashboard/button-stats?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: net::ERR_NETWORK_CHANGED
+/api/dashboard/agent-stats?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: net::ERR_NETWORK_CHANGED
+/api/dashboard/sequence-stats?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: the server responded with a status of 504 ()
+/api/dashboard/summary?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: the server responded with a status of 504 ()
+/api/subscribers?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: the server responded with a status of 504 ()
+/api/dashboard/button-stats?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: the server responded with a status of 504 ()
+/api/dashboard/label-stats?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: the server responded with a status of 504 ()
+/api/dashboard/agent-stats?apiToken=13394%7CGH9rYTmr0RGEizWqAnWQgZmZLsRyxVzwd4vupIlE373f9867&phoneNumberId=702429206296874:1  Failed to load resource: the server responded with a status of 504 ()
