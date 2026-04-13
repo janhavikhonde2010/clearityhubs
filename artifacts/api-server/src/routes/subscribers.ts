@@ -491,11 +491,19 @@ router.post("/templates/list", async (req, res): Promise<void> => {
   const templates = items.map((item) => {
     const headerRaw = String(item["header_type"] ?? item["headerType"] ?? item["header_format"] ?? item["header"] ?? "").toUpperCase();
     const headerType = ["IMAGE", "VIDEO", "DOCUMENT"].includes(headerRaw) ? headerRaw : null;
+    const message = String(item["message"] ?? item["body"] ?? item["template"] ?? item["text"] ?? "");
+
+    // Extract numbered body variables like {{1}}, {{2}}, etc.
+    const varMatches = message.match(/\{\{(\d+)\}\}/g) ?? [];
+    const varIndices = [...new Set(varMatches.map((m) => parseInt(m.replace(/\{\{|\}\}/g, ""))))].sort((a, b) => a - b);
+    const bodyVariables = varIndices.map((i) => `{{${i}}}`);
+
     return {
       id: String(item["id"] ?? item["template_id"] ?? ""),
       name: String(item["name"] ?? item["template_name"] ?? ""),
-      message: String(item["message"] ?? item["body"] ?? item["template"] ?? item["text"] ?? ""),
+      message,
       headerType,
+      bodyVariables,
     };
   }).filter((t) => t.name);
 
@@ -503,13 +511,16 @@ router.post("/templates/list", async (req, res): Promise<void> => {
 });
 
 router.post("/templates/send-to-label", async (req, res): Promise<void> => {
-  const { apiToken, phoneNumberId, labelName, templateId, message, headerImageUrl } = req.body as {
+  const { apiToken, phoneNumberId, labelName, templateId, message, headerImageUrl, headerVideoUrl, headerDocumentUrl, bodyVariables } = req.body as {
     apiToken?: string;
     phoneNumberId?: string;
     labelName?: string;
     templateId?: string;
     message?: string;
     headerImageUrl?: string;
+    headerVideoUrl?: string;
+    headerDocumentUrl?: string;
+    bodyVariables?: string[];
   };
 
   if (!apiToken || !phoneNumberId || !labelName?.trim()) {
@@ -556,8 +567,13 @@ router.post("/templates/send-to-label", async (req, res): Promise<void> => {
             template_id: templateId!.trim(),
             phone_number: sub.phoneNumber,
           });
-          if (headerImageUrl?.trim()) {
-            sendParams.set("header_image_url", headerImageUrl.trim());
+          if (headerImageUrl?.trim()) sendParams.set("header_image_url", headerImageUrl.trim());
+          if (headerVideoUrl?.trim()) sendParams.set("header_video_url", headerVideoUrl.trim());
+          if (headerDocumentUrl?.trim()) sendParams.set("header_document_url", headerDocumentUrl.trim());
+          if (Array.isArray(bodyVariables)) {
+            bodyVariables.forEach((val, idx) => {
+              sendParams.set(`body_variable_${idx + 1}`, val ?? "");
+            });
           }
           r = await fetch(
             "https://growth.thewiseparrot.club/api/v1/whatsapp/send/template",

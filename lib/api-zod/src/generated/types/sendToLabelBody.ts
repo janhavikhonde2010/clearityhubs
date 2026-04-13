@@ -17,4 +17,10 @@ export interface SendToLabelBody {
   message?: string;
   /** Image URL for templates that have an IMAGE header component */
   headerImageUrl?: string;
+  /** Video URL for templates that have a VIDEO header component */
+  headerVideoUrl?: string;
+  /** Document URL for templates that have a DOCUMENT header component */
+  headerDocumentUrl?: string;
+  /** Values for body variables in order — bodyVariables[0] maps to {{1}}, bodyVariables[1] to {{2}}, etc. */
+  bodyVariables?: string[];
 }

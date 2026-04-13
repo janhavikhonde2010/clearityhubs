@@ -555,14 +555,19 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
 /* ═══════════════ MESSAGE BROADCAST CARD ═══════════════ */
 function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; phoneNumberId: string }) {
   const [selectedLabelName, setSelectedLabelName] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState<{ id: string; name: string; message: string; headerType?: string | null } | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<{ id: string; name: string; message: string; headerType?: string | null; bodyVariables?: string[] } | null>(null);
   const [customMessage, setCustomMessage] = useState("");
-  const [headerImageUrl, setHeaderImageUrl] = useState("");
+  const [headerMediaUrl, setHeaderMediaUrl] = useState("");
+  const [bodyVariableValues, setBodyVariableValues] = useState<string[]>([]);
   const [useCustom, setUseCustom] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [sendResult, setSendResult] = useState<{ total: number; succeeded: number; failed: number; errors: { phone: string; reason: string }[] } | null>(null);
   const [showErrors, setShowErrors] = useState(false);
-  const needsImageHeader = !useCustom && selectedTemplate?.headerType === "IMAGE";
+
+  const activeHeaderType = !useCustom ? (selectedTemplate?.headerType ?? null) : null;
+  const needsMediaHeader = !!activeHeaderType && ["IMAGE", "VIDEO", "DOCUMENT"].includes(activeHeaderType);
+  const templateVars = !useCustom && selectedTemplate?.bodyVariables?.length ? selectedTemplate.bodyVariables : [];
+  const allVarsFilled = templateVars.length === 0 || (bodyVariableValues.length === templateVars.length && bodyVariableValues.every((v) => !!v.trim()));
 
   const { data: labelListData, isLoading: loadingLabels } = useGetLabelList(
     { apiToken, phoneNumberId },
@@ -593,7 +598,7 @@ function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; p
     fetchTemplates({ data: { apiToken, phoneNumberId } });
   }, [apiToken, phoneNumberId]);
 
-  const canSend = selectedLabelName && (useCustom ? !!customMessage.trim() : !!selectedTemplate) && (!needsImageHeader || !!headerImageUrl.trim()) && !sending;
+  const canSend = selectedLabelName && (useCustom ? !!customMessage.trim() : !!selectedTemplate) && (!needsMediaHeader || !!headerMediaUrl.trim()) && allVarsFilled && !sending;
 
   function handleSend() {
     if (!canSend) return;
@@ -602,7 +607,19 @@ function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; p
     if (useCustom) {
       doSend({ data: { apiToken, phoneNumberId, labelName: selectedLabelName, message: customMessage.trim() } });
     } else {
-      doSend({ data: { apiToken, phoneNumberId, labelName: selectedLabelName, templateId: selectedTemplate!.id, ...(headerImageUrl.trim() ? { headerImageUrl: headerImageUrl.trim() } : {}) } });
+      const mediaUrl = headerMediaUrl.trim();
+      doSend({
+        data: {
+          apiToken,
+          phoneNumberId,
+          labelName: selectedLabelName,
+          templateId: selectedTemplate!.id,
+          ...(activeHeaderType === "IMAGE" && mediaUrl ? { headerImageUrl: mediaUrl } : {}),
+          ...(activeHeaderType === "VIDEO" && mediaUrl ? { headerVideoUrl: mediaUrl } : {}),
+          ...(activeHeaderType === "DOCUMENT" && mediaUrl ? { headerDocumentUrl: mediaUrl } : {}),
+          ...(bodyVariableValues.length > 0 ? { bodyVariables: bodyVariableValues } : {}),
+        },
+      });
     }
   }
 
@@ -635,7 +652,7 @@ function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; p
           ) : (
             <select
               value={selectedLabelName}
-              onChange={(e) => { setSelectedLabelName(e.target.value); setSendResult(null); setConfirmed(false); setHeaderImageUrl(""); }}
+              onChange={(e) => { setSelectedLabelName(e.target.value); setSendResult(null); setConfirmed(false); setHeaderMediaUrl(""); setBodyVariableValues([]); }}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
             >
               <option value="">— Select a label —</option>
@@ -669,14 +686,16 @@ function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; p
                 if (e.target.value === "__custom__") {
                   setSelectedTemplate(null);
                   setUseCustom(true);
-                  setHeaderImageUrl("");
+                  setHeaderMediaUrl("");
+                  setBodyVariableValues([]);
                   setSendResult(null);
                   setConfirmed(false);
                 } else {
                   const t = templates.find((t) => t.id === e.target.value) ?? null;
                   setSelectedTemplate(t);
                   setUseCustom(false);
-                  setHeaderImageUrl("");
+                  setHeaderMediaUrl("");
+                  setBodyVariableValues(t?.bodyVariables?.map(() => "") ?? []);
                   setSendResult(null);
                   setConfirmed(false);
                 }
@@ -720,20 +739,53 @@ function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; p
         </div>
       )}
 
-      {/* Image URL input for templates with IMAGE header */}
-      {needsImageHeader && (
-        <div className="mb-4">
-          <label className="block text-xs font-medium text-gray-600 mb-1.5">
-            Header Image URL <span className="text-red-500">*</span>
+      {/* Media URL input for IMAGE / VIDEO / DOCUMENT header templates */}
+      {needsMediaHeader && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+          <label className="block text-xs font-medium text-amber-800 mb-1.5">
+            {activeHeaderType === "IMAGE" && "🖼 Header Image URL"}
+            {activeHeaderType === "VIDEO" && "🎬 Header Video URL"}
+            {activeHeaderType === "DOCUMENT" && "📄 Header Document URL"}
+            <span className="text-red-500 ml-1">*</span>
           </label>
           <input
             type="url"
-            value={headerImageUrl}
-            onChange={(e) => setHeaderImageUrl(e.target.value)}
-            placeholder="https://example.com/image.jpg"
-            className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+            value={headerMediaUrl}
+            onChange={(e) => setHeaderMediaUrl(e.target.value)}
+            placeholder={
+              activeHeaderType === "IMAGE" ? "https://example.com/image.jpg" :
+              activeHeaderType === "VIDEO" ? "https://example.com/video.mp4" :
+              "https://example.com/document.pdf"
+            }
+            className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200 bg-white"
           />
-          <p className="text-xs text-amber-600 mt-1">This template has an image header — please provide a publicly accessible image URL.</p>
+          <p className="text-xs text-amber-600 mt-1">This template requires a media URL — must be a publicly accessible link.</p>
+        </div>
+      )}
+
+      {/* Body variable inputs */}
+      {templateVars.length > 0 && (
+        <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+          <p className="text-xs font-medium text-blue-800 mb-2">Template Variables <span className="text-red-500">*</span></p>
+          <div className="space-y-2">
+            {templateVars.map((placeholder, idx) => (
+              <div key={placeholder} className="flex items-center gap-2">
+                <span className="text-xs font-mono text-blue-600 bg-blue-100 rounded px-2 py-1 whitespace-nowrap">{placeholder}</span>
+                <input
+                  type="text"
+                  value={bodyVariableValues[idx] ?? ""}
+                  onChange={(e) => {
+                    const next = [...bodyVariableValues];
+                    next[idx] = e.target.value;
+                    setBodyVariableValues(next);
+                  }}
+                  placeholder={`Value for ${placeholder}`}
+                  className="flex-1 border border-blue-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 bg-white"
+                />
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-blue-600 mt-2">Fill in all variables — they will be replaced in the message for every recipient.</p>
         </div>
       )}
 

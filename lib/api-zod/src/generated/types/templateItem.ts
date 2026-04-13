@@ -13,4 +13,6 @@ export interface TemplateItem {
   message: string;
   /** Header component type — IMAGE, VIDEO, DOCUMENT, or null for text/none */
   headerType?: string | null;
+  /** List of body variable placeholders found in the template, e.g. ["{{1}}", "{{2}}"] */
+  bodyVariables: string[];
 }

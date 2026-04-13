@@ -265,6 +265,11 @@ export const GetTemplateListResponse = zod.object({
         .describe(
           "Header component type — IMAGE, VIDEO, DOCUMENT, or null for text\/none",
         ),
+      bodyVariables: zod
+        .array(zod.string())
+        .describe(
+          'List of body variable placeholders found in the template, e.g. [\"{{1}}\", \"{{2}}\"]',
+        ),
     }),
   ),
 });
@@ -296,6 +301,22 @@ export const SendTemplateToLabelBody = zod.object({
     .string()
     .optional()
     .describe("Image URL for templates that have an IMAGE header component"),
+  headerVideoUrl: zod
+    .string()
+    .optional()
+    .describe("Video URL for templates that have a VIDEO header component"),
+  headerDocumentUrl: zod
+    .string()
+    .optional()
+    .describe(
+      "Document URL for templates that have a DOCUMENT header component",
+    ),
+  bodyVariables: zod
+    .array(zod.string())
+    .optional()
+    .describe(
+      "Values for body variables in order — bodyVariables[0] maps to {{1}}, bodyVariables[1] to {{2}}, etc.",
+    ),
 });
 
 export const SendTemplateToLabelResponse = zod.object({

@@ -732,10 +732,16 @@ components:
           type: string
           nullable: true
           description: Header component type — IMAGE, VIDEO, DOCUMENT, or null for text/none
+        bodyVariables:
+          type: array
+          items:
+            type: string
+          description: List of body variable placeholders found in the template, e.g. ["{{1}}", "{{2}}"]
       required:
         - id
         - name
         - message
+        - bodyVariables
 
     GetTemplateListBody:
       type: object
@@ -777,6 +783,17 @@ components:
         headerImageUrl:
           type: string
           description: Image URL for templates that have an IMAGE header component
+        headerVideoUrl:
+          type: string
+          description: Video URL for templates that have a VIDEO header component
+        headerDocumentUrl:
+          type: string
+          description: Document URL for templates that have a DOCUMENT header component
+        bodyVariables:
+          type: array
+          items:
+            type: string
+          description: Values for body variables in order — bodyVariables[0] maps to {{1}}, bodyVariables[1] to {{2}}, etc.
       required:
         - apiToken
         - phoneNumberId
