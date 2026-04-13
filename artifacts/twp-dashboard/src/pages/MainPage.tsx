@@ -555,12 +555,14 @@ function LabelManagementCard({ apiToken, phoneNumberId }: { apiToken: string; ph
 /* ═══════════════ MESSAGE BROADCAST CARD ═══════════════ */
 function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; phoneNumberId: string }) {
   const [selectedLabelName, setSelectedLabelName] = useState("");
-  const [selectedTemplate, setSelectedTemplate] = useState<{ id: string; name: string; message: string } | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<{ id: string; name: string; message: string; headerType?: string | null } | null>(null);
   const [customMessage, setCustomMessage] = useState("");
+  const [headerImageUrl, setHeaderImageUrl] = useState("");
   const [useCustom, setUseCustom] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [sendResult, setSendResult] = useState<{ total: number; succeeded: number; failed: number; errors: { phone: string; reason: string }[] } | null>(null);
   const [showErrors, setShowErrors] = useState(false);
+  const needsImageHeader = !useCustom && selectedTemplate?.headerType === "IMAGE";
 
   const { data: labelListData, isLoading: loadingLabels } = useGetLabelList(
     { apiToken, phoneNumberId },
@@ -591,7 +593,7 @@ function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; p
     fetchTemplates({ data: { apiToken, phoneNumberId } });
   }, [apiToken, phoneNumberId]);
 
-  const canSend = selectedLabelName && (useCustom ? !!customMessage.trim() : !!selectedTemplate) && !sending;
+  const canSend = selectedLabelName && (useCustom ? !!customMessage.trim() : !!selectedTemplate) && (!needsImageHeader || !!headerImageUrl.trim()) && !sending;
 
   function handleSend() {
     if (!canSend) return;
@@ -600,7 +602,7 @@ function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; p
     if (useCustom) {
       doSend({ data: { apiToken, phoneNumberId, labelName: selectedLabelName, message: customMessage.trim() } });
     } else {
-      doSend({ data: { apiToken, phoneNumberId, labelName: selectedLabelName, templateId: selectedTemplate!.id } });
+      doSend({ data: { apiToken, phoneNumberId, labelName: selectedLabelName, templateId: selectedTemplate!.id, ...(headerImageUrl.trim() ? { headerImageUrl: headerImageUrl.trim() } : {}) } });
     }
   }
 
@@ -633,7 +635,7 @@ function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; p
           ) : (
             <select
               value={selectedLabelName}
-              onChange={(e) => { setSelectedLabelName(e.target.value); setSendResult(null); setConfirmed(false); }}
+              onChange={(e) => { setSelectedLabelName(e.target.value); setSendResult(null); setConfirmed(false); setHeaderImageUrl(""); }}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
             >
               <option value="">— Select a label —</option>
@@ -667,12 +669,14 @@ function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; p
                 if (e.target.value === "__custom__") {
                   setSelectedTemplate(null);
                   setUseCustom(true);
+                  setHeaderImageUrl("");
                   setSendResult(null);
                   setConfirmed(false);
                 } else {
                   const t = templates.find((t) => t.id === e.target.value) ?? null;
                   setSelectedTemplate(t);
                   setUseCustom(false);
+                  setHeaderImageUrl("");
                   setSendResult(null);
                   setConfirmed(false);
                 }
@@ -681,7 +685,9 @@ function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; p
             >
               <option value="">— Select a template —</option>
               {templates.map((t) => (
-                <option key={t.id} value={t.id}>{t.name}</option>
+                <option key={t.id} value={t.id}>
+                  {t.headerType === "IMAGE" ? "🖼 " : t.headerType === "VIDEO" ? "🎬 " : t.headerType === "DOCUMENT" ? "📄 " : ""}{t.name}
+                </option>
               ))}
               <option value="__custom__">✏️ Custom message…</option>
             </select>
@@ -711,6 +717,23 @@ function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; p
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed max-h-36 overflow-y-auto">
             {selectedTemplate.message || <span className="text-gray-400 italic">No preview available</span>}
           </div>
+        </div>
+      )}
+
+      {/* Image URL input for templates with IMAGE header */}
+      {needsImageHeader && (
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-gray-600 mb-1.5">
+            Header Image URL <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="url"
+            value={headerImageUrl}
+            onChange={(e) => setHeaderImageUrl(e.target.value)}
+            placeholder="https://example.com/image.jpg"
+            className="w-full border border-amber-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-200"
+          />
+          <p className="text-xs text-amber-600 mt-1">This template has an image header — please provide a publicly accessible image URL.</p>
         </div>
       )}
 

@@ -11,4 +11,6 @@ export interface TemplateItem {
   name: string;
   /** The template message content */
   message: string;
+  /** Header component type — IMAGE, VIDEO, DOCUMENT, or null for text/none */
+  headerType?: string | null;
 }

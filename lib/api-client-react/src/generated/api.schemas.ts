@@ -148,6 +148,8 @@ export interface TemplateItem {
   name: string;
   /** The template message content */
   message: string;
+  /** Header component type — IMAGE, VIDEO, DOCUMENT, or null for text/none */
+  headerType?: string | null;
 }
 
 export interface GetTemplateListBody {
@@ -168,6 +170,8 @@ export interface SendToLabelBody {
   templateId?: string;
   /** Plain text message (only used when sending a custom message instead of a template) */
   message?: string;
+  /** Image URL for templates that have an IMAGE header component */
+  headerImageUrl?: string;
 }
 
 export type SendToLabelResponseErrorsItem = {

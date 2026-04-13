@@ -259,6 +259,12 @@ export const GetTemplateListResponse = zod.object({
       id: zod.string(),
       name: zod.string(),
       message: zod.string().describe("The template message content"),
+      headerType: zod
+        .string()
+        .nullish()
+        .describe(
+          "Header component type — IMAGE, VIDEO, DOCUMENT, or null for text\/none",
+        ),
     }),
   ),
 });
@@ -286,6 +292,10 @@ export const SendTemplateToLabelBody = zod.object({
     .describe(
       "Plain text message (only used when sending a custom message instead of a template)",
     ),
+  headerImageUrl: zod
+    .string()
+    .optional()
+    .describe("Image URL for templates that have an IMAGE header component"),
 });
 
 export const SendTemplateToLabelResponse = zod.object({

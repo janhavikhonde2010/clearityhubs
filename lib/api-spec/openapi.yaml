@@ -728,6 +728,10 @@ components:
         message:
           type: string
           description: The template message content
+        headerType:
+          type: string
+          nullable: true
+          description: Header component type — IMAGE, VIDEO, DOCUMENT, or null for text/none
       required:
         - id
         - name
@@ -770,6 +774,9 @@ components:
         message:
           type: string
           description: Plain text message (only used when sending a custom message instead of a template)
+        headerImageUrl:
+          type: string
+          description: Image URL for templates that have an IMAGE header component
       required:
         - apiToken
         - phoneNumberId

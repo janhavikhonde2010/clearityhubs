@@ -15,4 +15,6 @@ export interface SendToLabelBody {
   templateId?: string;
   /** Plain text message (only used when sending a custom message instead of a template) */
   message?: string;
+  /** Image URL for templates that have an IMAGE header component */
+  headerImageUrl?: string;
 }

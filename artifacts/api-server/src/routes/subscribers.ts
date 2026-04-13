@@ -20,6 +20,12 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 // cache is cold.
 const inflight = new Map<string, Promise<ProcessedSubscriber[]>>();
 
+function invalidateCache(apiToken: string, phoneNumberId: string): void {
+  const key = `${apiToken}:${phoneNumberId}`;
+  cache.delete(key);
+  inflight.delete(key);
+}
+
 async function getProcessedSubscribers(apiToken: string, phoneNumberId: string): Promise<ProcessedSubscriber[]> {
   const key = `${apiToken}:${phoneNumberId}`;
 
@@ -349,6 +355,7 @@ router.post("/labels/bulk-assign", async (req, res): Promise<void> => {
     }));
   }
 
+  invalidateCache(apiToken, phoneNumberId);
   res.json({ total: numbers.length, succeeded, created, failed: errors.length, errors });
 });
 
@@ -398,10 +405,12 @@ router.post("/labels/assign-subscriber", async (req, res): Promise<void> => {
       return;
     }
 
+    invalidateCache(apiToken, phoneNumberId);
     res.json({ success: true, message: `New subscriber created and assigned successfully` });
     return;
   }
 
+  invalidateCache(apiToken, phoneNumberId);
   res.json({ success: true, message: raw.message ?? "Subscriber assigned successfully" });
 });
 
@@ -479,22 +488,28 @@ router.post("/templates/list", async (req, res): Promise<void> => {
   }
 
   const items = Array.isArray(raw.message) ? raw.message as Array<Record<string, unknown>> : [];
-  const templates = items.map((item) => ({
-    id: String(item["id"] ?? item["template_id"] ?? ""),
-    name: String(item["name"] ?? item["template_name"] ?? ""),
-    message: String(item["message"] ?? item["body"] ?? item["template"] ?? item["text"] ?? ""),
-  })).filter((t) => t.name);
+  const templates = items.map((item) => {
+    const headerRaw = String(item["header_type"] ?? item["headerType"] ?? item["header_format"] ?? item["header"] ?? "").toUpperCase();
+    const headerType = ["IMAGE", "VIDEO", "DOCUMENT"].includes(headerRaw) ? headerRaw : null;
+    return {
+      id: String(item["id"] ?? item["template_id"] ?? ""),
+      name: String(item["name"] ?? item["template_name"] ?? ""),
+      message: String(item["message"] ?? item["body"] ?? item["template"] ?? item["text"] ?? ""),
+      headerType,
+    };
+  }).filter((t) => t.name);
 
   res.json({ templates });
 });
 
 router.post("/templates/send-to-label", async (req, res): Promise<void> => {
-  const { apiToken, phoneNumberId, labelName, templateId, message } = req.body as {
+  const { apiToken, phoneNumberId, labelName, templateId, message, headerImageUrl } = req.body as {
     apiToken?: string;
     phoneNumberId?: string;
     labelName?: string;
     templateId?: string;
     message?: string;
+    headerImageUrl?: string;
   };
 
   if (!apiToken || !phoneNumberId || !labelName?.trim()) {
@@ -541,6 +556,9 @@ router.post("/templates/send-to-label", async (req, res): Promise<void> => {
             template_id: templateId!.trim(),
             phone_number: sub.phoneNumber,
           });
+          if (headerImageUrl?.trim()) {
+            sendParams.set("header_image_url", headerImageUrl.trim());
+          }
           r = await fetch(
             "https://growth.thewiseparrot.club/api/v1/whatsapp/send/template",
             { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: sendParams.toString(), signal: AbortSignal.timeout(10_000) }
