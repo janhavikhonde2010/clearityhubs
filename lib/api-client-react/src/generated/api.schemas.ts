@@ -164,8 +164,10 @@ export interface SendToLabelBody {
   phoneNumberId: string;
   /** Label name — all subscribers with this label will receive the message */
   labelName: string;
-  /** The message text to send */
-  message: string;
+  /** Template ID to send via the template endpoint (use this for WhatsApp templates) */
+  templateId?: string;
+  /** Plain text message (only used when sending a custom message instead of a template) */
+  message?: string;
 }
 
 export type SendToLabelResponseErrorsItem = {

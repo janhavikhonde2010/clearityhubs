@@ -591,14 +591,17 @@ function MessageBroadcastCard({ apiToken, phoneNumberId }: { apiToken: string; p
     fetchTemplates({ data: { apiToken, phoneNumberId } });
   }, [apiToken, phoneNumberId]);
 
-  const messageToSend = useCustom ? customMessage.trim() : (selectedTemplate?.message ?? "");
-  const canSend = selectedLabelName && messageToSend && !sending;
+  const canSend = selectedLabelName && (useCustom ? !!customMessage.trim() : !!selectedTemplate) && !sending;
 
   function handleSend() {
     if (!canSend) return;
     setSendResult(null);
     setShowErrors(false);
-    doSend({ data: { apiToken, phoneNumberId, labelName: selectedLabelName, message: messageToSend } });
+    if (useCustom) {
+      doSend({ data: { apiToken, phoneNumberId, labelName: selectedLabelName, message: customMessage.trim() } });
+    } else {
+      doSend({ data: { apiToken, phoneNumberId, labelName: selectedLabelName, templateId: selectedTemplate!.id } });
+    }
   }
 
   return (

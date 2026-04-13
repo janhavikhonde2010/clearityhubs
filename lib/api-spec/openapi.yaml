@@ -764,14 +764,16 @@ components:
         labelName:
           type: string
           description: Label name — all subscribers with this label will receive the message
+        templateId:
+          type: string
+          description: Template ID to send via the template endpoint (use this for WhatsApp templates)
         message:
           type: string
-          description: The message text to send
+          description: Plain text message (only used when sending a custom message instead of a template)
       required:
         - apiToken
         - phoneNumberId
         - labelName
-        - message
 
     SendToLabelResponse:
       type: object

@@ -488,15 +488,24 @@ router.post("/templates/list", async (req, res): Promise<void> => {
 });
 
 router.post("/templates/send-to-label", async (req, res): Promise<void> => {
-  const { apiToken, phoneNumberId, labelName, message } = req.body as {
+  const { apiToken, phoneNumberId, labelName, templateId, message } = req.body as {
     apiToken?: string;
     phoneNumberId?: string;
     labelName?: string;
+    templateId?: string;
     message?: string;
   };
 
-  if (!apiToken || !phoneNumberId || !labelName?.trim() || !message?.trim()) {
-    res.status(400).json({ error: "apiToken, phoneNumberId, labelName and message are required" });
+  if (!apiToken || !phoneNumberId || !labelName?.trim()) {
+    res.status(400).json({ error: "apiToken, phoneNumberId and labelName are required" });
+    return;
+  }
+
+  const usingTemplate = !!templateId?.trim();
+  const usingCustom = !!message?.trim();
+
+  if (!usingTemplate && !usingCustom) {
+    res.status(400).json({ error: "Either templateId or message is required" });
     return;
   }
 
@@ -515,18 +524,36 @@ router.post("/templates/send-to-label", async (req, res): Promise<void> => {
   for (let i = 0; i < targets.length; i += BATCH) {
     const batch = targets.slice(i, i + BATCH);
     await Promise.all(batch.map(async (sub) => {
-      const sendParams = new URLSearchParams({
-        apiToken,
-        phone_number_id: phoneNumberId,
-        message: message.trim(),
-        phone_number: sub.phoneNumber,
-      });
       try {
-        const r = await fetch(
-          "https://growth.thewiseparrot.club/api/v1/whatsapp/send",
-          { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: sendParams.toString(), signal: AbortSignal.timeout(10_000) }
-        );
-        const rawResp = await r.json() as { status?: string; message?: string };
+        let r: Response;
+        let rawResp: { status?: string; message?: string };
+
+        if (usingTemplate) {
+          const sendParams = new URLSearchParams({
+            apiToken,
+            phone_number_id: phoneNumberId,
+            template_id: templateId!.trim(),
+            phone_number: sub.phoneNumber,
+          });
+          r = await fetch(
+            "https://growth.thewiseparrot.club/api/v1/whatsapp/send/template",
+            { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: sendParams.toString(), signal: AbortSignal.timeout(10_000) }
+          );
+          rawResp = await r.json() as { status?: string; message?: string };
+        } else {
+          const sendParams = new URLSearchParams({
+            apiToken,
+            phone_number_id: phoneNumberId,
+            message: message!.trim(),
+            phone_number: sub.phoneNumber,
+          });
+          r = await fetch(
+            "https://growth.thewiseparrot.club/api/v1/whatsapp/send",
+            { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: sendParams.toString(), signal: AbortSignal.timeout(10_000) }
+          );
+          rawResp = await r.json() as { status?: string; message?: string };
+        }
+
         if (r.ok && rawResp.status === "1") {
           succeeded++;
         } else {

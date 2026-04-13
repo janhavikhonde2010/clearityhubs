@@ -274,7 +274,18 @@ export const SendTemplateToLabelBody = zod.object({
     .describe(
       "Label name — all subscribers with this label will receive the message",
     ),
-  message: zod.string().describe("The message text to send"),
+  templateId: zod
+    .string()
+    .optional()
+    .describe(
+      "Template ID to send via the template endpoint (use this for WhatsApp templates)",
+    ),
+  message: zod
+    .string()
+    .optional()
+    .describe(
+      "Plain text message (only used when sending a custom message instead of a template)",
+    ),
 });
 
 export const SendTemplateToLabelResponse = zod.object({
